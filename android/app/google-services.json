@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "26621291769",
+    "project_id": "healthfi-eb6b3",
+    "storage_bucket": "healthfi-eb6b3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:26621291769:android:9c2b57b8a74ff1e4c80628",
+        "android_client_info": {
+          "package_name": "com.meta.jumpj"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "26621291769-ger7i01j95ptc5d8qu2hgqpmkhfd4121.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC49rztt7grneuPnmOs-BbQRT9DVEfe1gs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "26621291769-ger7i01j95ptc5d8qu2hgqpmkhfd4121.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

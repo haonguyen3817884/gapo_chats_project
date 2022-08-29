@@ -1,0 +1,11 @@
+apple_id 'toandk.mj@gmail.com'
+app_identifier("com.meta.jumpj") # The bundle identifier of your app
+app_identifier "com.meta.jumpj"
+itc_team_id "118140497" 
+team_id "NZDT3JH2L2" 
+itc_team_id("118140497") # iTunes Connect Team ID
+team_id("NZDT3JH2L2") # Developer Portal Team ID
+apple_id(ENV["APPLE_ID"])
+
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile
