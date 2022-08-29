@@ -60,34 +60,28 @@ class ChatsController extends BaseController {
     token.listen((value) async {
       if (value != "") {
         isLoading.value = true;
-        await _getChats();
-        await _getCustomerInfo();
-        await _getMQTT();
+
+        try {
+          await _getChats();
+          await _getCustomerInfo();
+          await _getMQTT();
+        } catch (e) {
+          Get.showSnackbar(GetSnackBar(
+            backgroundColor: GPColor.workPrimary,
+            messageText: Text(
+              LocaleKeys.chat_errorNotification.tr,
+              style: textStyle(GPTypography.bodyMedium)?.merge(
+                  const TextStyle(color: GPColor.contentInversePrimary)),
+            ),
+            duration: const Duration(seconds: 2),
+          ));
+        }
         isLoading.value = false;
       }
     });
 
     chatMessage.listen((value) async {
-      ChatModel chatModel = await _chatAPI.getChatFromApi(
-          threadId: value.thread.id!,
-          token: _customerLogin.access_token,
-          user_id: _customerLogin.user_id);
-
-      chatModel.lastMessage?.body = value.body.text;
-
-      List<ChatModel> chatArr = [];
-
-      chatArr = List<ChatModel>.from(chats);
-
-      int chatIndex = chats.indexWhere((chat) {
-        return chat.id == chatModel.id;
-      });
-
-      if (chatIndex != -1) {
-        chatArr.removeAt(chatIndex);
-      }
-
-      chats.value = List<ChatModel>.from([chatModel])..addAll(chatArr);
+      await updateChats(value);
 
       messageArr.add(value);
     });
@@ -121,108 +115,58 @@ class ChatsController extends BaseController {
   }
 
   Future<void> _getChats() async {
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-      List<ChatModel> res = await _chatAPI.getChatsFromApi(
-          page: _currentPage,
-          token: token.value,
-          user_id: _customerLogin.user_id,
-          messages: messageArr);
-      if (_currentKeyword.trim().isNotEmpty) {
-        if (firstPage) {
-          chats.value = res
-              .where(
-                  (element) => element.nameContains(keyword: _currentKeyword))
-              .toList();
-        } else {
-          chats.addAll(res
-              .where(
-                  (element) => element.nameContains(keyword: _currentKeyword))
-              .toList());
-        }
+    await Future.delayed(const Duration(seconds: 2));
+    List<ChatModel> res = await _chatAPI.getChatsFromApi(
+        page: _currentPage,
+        token: token.value,
+        user_id: _customerLogin.user_id,
+        messages: messageArr);
+    if (_currentKeyword.trim().isNotEmpty) {
+      if (firstPage) {
+        chats.value = res
+            .where((element) => element.nameContains(keyword: _currentKeyword))
+            .toList();
       } else {
-        if (firstPage) {
-          chats.value = res;
-          _chatsStored = res;
-        } else {
-          chats.addAll(res);
-          _chatsStored.addAll(res);
-        }
+        chats.addAll(res
+            .where((element) => element.nameContains(keyword: _currentKeyword))
+            .toList());
       }
-    } catch (e) {
-      Get.showSnackbar(GetSnackBar(
-        backgroundColor: GPColor.workPrimary,
-        messageText: Text(
-          LocaleKeys.chat_errorNotification.tr,
-          style: textStyle(GPTypography.bodyMedium)
-              ?.merge(const TextStyle(color: GPColor.contentInversePrimary)),
-        ),
-        duration: const Duration(seconds: 2),
-      ));
+    } else {
+      if (firstPage) {
+        chats.value = res;
+        _chatsStored = res;
+      } else {
+        chats.addAll(res);
+        _chatsStored.addAll(res);
+      }
     }
   }
 
   Future<void> _getToken() async {
-    try {
-      await Future.delayed(Duration(seconds: 2));
-      CustomerLogin response = await _customerApi.getCustomer();
-      _customerLogin = response;
-      token.value = response.access_token;
-    } catch (e) {
-      Get.showSnackbar(GetSnackBar(
-        backgroundColor: GPColor.workPrimary,
-        messageText: Text(
-          LocaleKeys.chat_errorNotification.tr,
-          style: textStyle(GPTypography.bodyMedium)
-              ?.merge(const TextStyle(color: GPColor.contentInversePrimary)),
-        ),
-        duration: const Duration(seconds: 2),
-      ));
-    }
+    await Future.delayed(Duration(seconds: 2));
+    CustomerLogin response = await _customerApi.getCustomer();
+    _customerLogin = response;
+    token.value = response.access_token;
   }
 
   Future<void> _getCustomerInfo() async {
-    try {
-      await Future.delayed(Duration(seconds: 2));
-      CustomerInfo response = await _customerApi.getCustomerInfo(
-          _customerLogin.user_id, token.value);
+    await Future.delayed(Duration(seconds: 2));
+    CustomerInfo response =
+        await _customerApi.getCustomerInfo(_customerLogin.user_id, token.value);
 
-      customerInfo.value = response;
-    } catch (e) {
-      Get.showSnackbar(GetSnackBar(
-        backgroundColor: GPColor.workPrimary,
-        messageText: Text(
-          LocaleKeys.chat_errorNotification.tr,
-          style: textStyle(GPTypography.bodyMedium)
-              ?.merge(const TextStyle(color: GPColor.contentInversePrimary)),
-        ),
-        duration: const Duration(seconds: 2),
-      ));
-    }
+    customerInfo.value = response;
   }
 
   Future<void> _getMQTT() async {
-    try {
-      _mqttService.setUsername = _customerLogin.user_id.toString();
-      _mqttService.setPassword = "Bearer " + token.value;
-      _mqttService.setTopic =
-          "v3/" + _customerLogin.user_id.toString() + "/" + "#";
+    _mqttService.setUsername = _customerLogin.user_id.toString();
+    _mqttService.setPassword = "Bearer " + token.value;
+    _mqttService.setTopic =
+        "v3/" + _customerLogin.user_id.toString() + "/" + "#";
 
-      _mqttService.onMessagePublishedAction = updateChatMessage;
+    _mqttService.onMessagePublishedAction = updateChatMessage;
 
-      _mqttService.initializeMQTTClient();
-      await _mqttService.connectMQTT();
-    } catch (e) {
-      Get.showSnackbar(GetSnackBar(
-        backgroundColor: GPColor.workPrimary,
-        messageText: Text(
-          LocaleKeys.chat_errorNotification.tr,
-          style: textStyle(GPTypography.bodyMedium)
-              ?.merge(const TextStyle(color: GPColor.contentInversePrimary)),
-        ),
-        duration: const Duration(seconds: 2),
-      ));
-    }
+    _mqttService.initializeMQTTClient();
+    await _mqttService.connectMQTT();
   }
 
   Future<dynamic> onReload() async {
@@ -286,6 +230,29 @@ class ChatsController extends BaseController {
 
   void updateChatMessage(ChatMessage message) {
     chatMessage.value = message;
+  }
+
+  Future<void> updateChats(ChatMessage message) async {
+    ChatModel chatModel = await _chatAPI.getChatFromApi(
+        threadId: message.thread.id!,
+        token: _customerLogin.access_token,
+        user_id: _customerLogin.user_id);
+
+    chatModel.lastMessage?.body = message.body.text;
+
+    List<ChatModel> chatArr = [];
+
+    chatArr = List<ChatModel>.from(chats);
+
+    int chatIndex = chats.indexWhere((chat) {
+      return chat.id == chatModel.id;
+    });
+
+    if (chatIndex != -1) {
+      chatArr.removeAt(chatIndex);
+    }
+
+    chats.value = List<ChatModel>.from([chatModel])..addAll(chatArr);
   }
 
   void goToStoredConversationScreen() async {
